@@ -5,13 +5,15 @@
             "Gasp! ${0} lunged at ${1} and started kissing them! :O",
             "OH MY GOD THEY'RE DOING IT THEY'RE DOING IT ${0} AND ${1} ARE MAKING OUT!!!",
             "I left ${0} and ${1} alone in the same room for five minutes and they're all over each other?!"
-        ]
+        ],
+        "yourself": "-# loser"
     },
     "boop": {
         "description": "Boop the snoot!",
         "responses": [
             "Aww! ${0} booped ${1} on the nose!! <3",
             "${1}, get booped! >:)\n-# This post was brought to you by ${0}"
-        ]
+        ],
+        "yourself": "${0}, what's wrong? Why would you boop yourself? :("
     }
 }
