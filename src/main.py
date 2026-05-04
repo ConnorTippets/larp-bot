@@ -76,16 +76,30 @@ for name, action in commands.items():
     if not isinstance(responses, list):
         raise KeyError("Fix ts2")
 
-    @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    @bot.tree.command(name=name, description=description)
-    async def com(
-        interaction: discord.Interaction, user: discord.User | discord.Member
-    ):
+    yourself = action["yourself"]
+    if not isinstance(yourself, str):
+        raise KeyError("you suck ass")
+
+    exec(
+        f"""@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.tree.command(name=name, description=description)
+async def {name}"""
+        + r"""(
+    interaction: discord.Interaction, user: discord.User | discord.Member
+):
+    if interaction.user.id == user.id:
         await interaction.response.send_message(
-            random.choice(responses)
-            .replace(r"${0}", interaction.user.mention)
-            .replace(r"${1}", user.mention)
+            yourself.replace(
+                r"${0}", interaction.user.mention
+            )
         )
+    await interaction.response.send_message(
+        random.choice(responses)
+        .replace(r"${0}", interaction.user.mention)
+        .replace(r"${1}", user.mention)
+    )""",
+        {**locals(), **globals()},
+    )
 
 
 token = ""
