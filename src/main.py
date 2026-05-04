@@ -3,6 +3,60 @@ import json
 import random
 import inspect
 from discord.ext.commands import Bot, Context
+from discord import ui
+import sqlite3
+
+db = sqlite3.connect("database.db")
+cursor = db.cursor()
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS consent (
+        user INTEGER,
+        sex BOOLEAN,
+        consent_male BOOLEAN,
+        consent_female BOOLEAN
+    );
+""")
+
+
+class Consent(ui.Modal, title="Consent"):
+    sex = ui.Label(
+        text="Sex",
+        component=ui.RadioGroup(
+            options=[
+                discord.RadioGroupOption(label="Male"),
+                discord.RadioGroupOption(label="Female"),
+            ]
+        ),
+    )
+    consenting_with = ui.Label(
+        text="You consent to",
+        component=ui.CheckboxGroup(
+            options=[
+                discord.CheckboxGroupOption(label="Male"),
+                discord.CheckboxGroupOption(label="Female"),
+            ]
+        ),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        consenting = (
+            self.consenting_with.component.values  # pyright: ignore[reportAttributeAccessIssue]
+        )
+        cursor.execute(
+            "INSERT INTO consent VALUES (?, ?, ?, ?)",
+            (
+                interaction.user.id,
+                self.sex.component.value  # pyright: ignore[reportAttributeAccessIssue]
+                == "Female",
+                "Male" in consenting,
+                "Female" in consenting,
+            ),
+        )
+        db.commit()
+        await interaction.response.send_message(
+            f"Consent settings updated!",
+            ephemeral=True,
+        )
 
 
 class MyBot(Bot):
@@ -38,22 +92,16 @@ async def smack(interaction: discord.Interaction, user: discord.User | discord.M
 
 
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.tree.command(name="consent", description="Change your consent configuration.")
+async def consent(interaction: discord.Interaction):
+    await interaction.response.send_modal(Consent())
+
+
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name="test", description="test")
 async def test(interaction: discord.Interaction):
-    frame = inspect.currentframe()
-
-    stack = ""
-    while frame:
-        stack += (
-            frame.f_code.co_filename
-            + ": "
-            + frame.f_code.co_name
-            + str(frame.f_lineno)
-            + "\n"
-        )
-        frame = frame.f_back
-
-    await interaction.response.send_message(stack[:-1])
+    cursor.execute("SELECT * FROM consent")
+    await interaction.response.send_message(cursor.fetchall())
 
 
 @bot.command(name="sync", description="Sync commands.")
