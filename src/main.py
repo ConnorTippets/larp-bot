@@ -26,6 +26,7 @@ class Consent(ui.Modal, title="Consent"):
             ]
         ),
     )
+    nsfw_in_dms = ui.Label(text="Allow NSFW in dms?", component=ui.Checkbox())
 
     async def on_submit(self, interaction: discord.Interaction):
         if not bot.db:
@@ -38,13 +39,14 @@ class Consent(ui.Modal, title="Consent"):
             self.consenting_with.component.values  # pyright: ignore[reportAttributeAccessIssue]
         )
         await bot.db.execute(
-            "INSERT OR REPLACE INTO consent VALUES (?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO consent VALUES (?, ?, ?, ?, ?)",
             (
                 interaction.user.id,
                 self.sex.component.value  # pyright: ignore[reportAttributeAccessIssue]
                 == "Female",
                 "Male" in consenting,
                 "Female" in consenting,
+                self.nsfw_in_dms.component.value,  # pyright: ignore[reportAttributeAccessIssue]
             ),
         )
         await bot.db.commit()
@@ -73,7 +75,8 @@ class MyBot(Bot):
                 user INTEGER UNIQUE,
                 sex BOOLEAN,
                 consent_male BOOLEAN,
-                consent_female BOOLEAN
+                consent_female BOOLEAN,
+                nsfw_in_dms BOOLEAN
             );
         """)
 
