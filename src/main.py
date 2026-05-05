@@ -4,18 +4,7 @@ import random
 import inspect
 from discord.ext.commands import Bot, Context
 from discord import ui
-import sqlite3
-
-db = sqlite3.connect("database.db")
-cursor = db.cursor()
-cursor.execute("""
-    CREATE TABLE IF NOT EXISTS consent (
-        user INTEGER,
-        sex BOOLEAN,
-        consent_male BOOLEAN,
-        consent_female BOOLEAN
-    );
-""")
+import aiosqlite
 
 
 class Consent(ui.Modal, title="Consent"):
@@ -39,11 +28,17 @@ class Consent(ui.Modal, title="Consent"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
+        if not bot.db:
+            await interaction.response.send_message(
+                "Database connection failed!", ephemeral=True
+            )
+            return
+
         consenting = (
             self.consenting_with.component.values  # pyright: ignore[reportAttributeAccessIssue]
         )
-        cursor.execute(
-            "INSERT INTO consent VALUES (?, ?, ?, ?)",
+        await bot.db.execute(
+            "INSERT OR REPLACE INTO consent VALUES (?, ?, ?, ?)",
             (
                 interaction.user.id,
                 self.sex.component.value  # pyright: ignore[reportAttributeAccessIssue]
@@ -52,7 +47,7 @@ class Consent(ui.Modal, title="Consent"):
                 "Female" in consenting,
             ),
         )
-        db.commit()
+        await bot.db.commit()
         await interaction.response.send_message(
             f"Consent settings updated!",
             ephemeral=True,
@@ -66,9 +61,20 @@ class MyBot(Bot):
             intents=discord.Intents.default()
             | discord.Intents._from_value(discord.Intents.message_content.flag),
         )
+        self.db = None
 
     async def setup_hook(self):
         print(await bot.tree.sync())
+
+        self.db = await aiosqlite.connect("database.db")
+        await self.db.execute("""
+            CREATE TABLE IF NOT EXISTS consent (
+                user INTEGER UNIQUE,
+                sex BOOLEAN,
+                consent_male BOOLEAN,
+                consent_female BOOLEAN
+            );
+        """)
 
 
 bot = MyBot()
@@ -100,8 +106,13 @@ async def consent(interaction: discord.Interaction):
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name="test", description="test")
 async def test(interaction: discord.Interaction):
-    cursor.execute("SELECT * FROM consent")
-    await interaction.response.send_message(cursor.fetchall())
+    if not bot.db:
+        return await interaction.response.send_message(
+            "Database connection failed!", ephemeral=True
+        )
+
+    cursor = await bot.db.execute("SELECT * FROM consent")
+    await interaction.response.send_message(await cursor.fetchall())
 
 
 @bot.command(name="sync", description="Sync commands.")
