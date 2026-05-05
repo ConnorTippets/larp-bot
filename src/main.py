@@ -7,6 +7,49 @@ from discord import ui
 import aiosqlite
 
 
+async def check_dms(
+    interaction: discord.Interaction, user: discord.User | discord.Member
+):
+    if not bot.db:
+        return await interaction.response.send_message(
+            "Database connection failed!", ephemeral=True
+        )
+
+    cursor = await bot.db.execute(
+        "SELECT nsfw_in_dms FROM consent WHERE user = ?", (interaction.user.id)
+    )
+    consent_author_row = await cursor.fetchone()
+
+    if not consent_author_row:
+        return await interaction.response.send_message(
+            "You have not consented to dms yet!", ephemeral=True
+        )
+
+    consent_author: int = consent_author_row[0]
+
+    if not consent_author:
+        return await interaction.response.send_message(
+            "You do not consent to dms!", ephemeral=True
+        )
+
+    cursor = await bot.db.execute(
+        "SELECT nsfw_in_dms FROM consent WHERE user = ?", (user.id)
+    )
+    consent_receiver_row = await cursor.fetchone()
+
+    if not consent_receiver_row:
+        return await interaction.response.send_message(
+            f"`{user.name} has not consented to dms yet!", ephemeral=True
+        )
+
+    consent_receiver: int = consent_receiver_row[0]
+
+    if not consent_receiver:
+        return await interaction.response.send_message(
+            f"`{user.name} does not consent to dms!", ephemeral=True
+        )
+
+
 class Consent(ui.Modal, title="Consent"):
     sex = ui.Label(
         text="Sex",
@@ -136,19 +179,25 @@ for name, action in commands.items():
     if not isinstance(description, str):
         raise KeyError("Fix ts")
 
-    responses = action["responses"]
-    if not isinstance(responses, list):
-        raise KeyError("Fix ts2")
-
     yourself = action["yourself"]
     if not isinstance(yourself, str):
         raise KeyError("you suck ass")
 
-    exec(
-        f"""@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    type = action["type"]
+    if not isinstance(type, str):
+        raise KeyError("bich")
+
+    match type:
+        case "nonnsfw":
+            responses = action["responses"]
+            if not isinstance(responses, list):
+                raise KeyError("Fix ts2")
+
+            exec(
+                f"""@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name=name, description=description)
 async def {name}"""
-        + r"""(
+                + r"""(
     interaction: discord.Interaction, user: discord.User | discord.Member
 ):
     if interaction.user.id == user.id:
@@ -162,8 +211,32 @@ async def {name}"""
         .replace(r"${0}", interaction.user.mention)
         .replace(r"${1}", user.mention)
     )""",
-        {**locals(), **globals()},
-    )
+                {**locals(), **globals()},
+            )
+        case "anynsfw":
+            exec(
+                f"""@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.tree.command(name=name, description=description)
+async def {name}"""
+                + r"""(
+    interaction: discord.Interaction, user: discord.User | discord.Member
+):
+    if not interaction.guild:
+        return await check_dms(interaction, user)
+
+    if interaction.user.id == user.id:
+        await interaction.response.send_message(
+            yourself.replace(
+                r"${0}", interaction.user.mention
+            )
+        )
+    await interaction.response.send_message(
+        random.choice(responses)
+        .replace(r"${0}", interaction.user.mention)
+        .replace(r"${1}", user.mention)
+    )""",
+                {**locals(), **globals()},
+            )
 
 
 token = ""

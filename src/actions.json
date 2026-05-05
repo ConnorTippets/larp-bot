@@ -6,7 +6,8 @@
             "OH MY GOD THEY'RE DOING IT THEY'RE DOING IT ${0} AND ${1} ARE MAKING OUT!!!",
             "I left ${0} and ${1} alone in the same room for five minutes and they're all over each other?!"
         ],
-        "yourself": "-# loser"
+        "yourself": "-# loser",
+        "type": "nonnsfw"
     },
     "boop": {
         "description": "Boop the snoot!",
@@ -14,6 +15,24 @@
             "Aww! ${0} booped ${1} on the nose!! <3",
             "${1}, get booped! >:)\n-# This post was brought to you by ${0}"
         ],
-        "yourself": "${0}, what's wrong? Why would you boop yourself? :("
+        "yourself": "${0}, what's wrong? Why would you boop yourself? :(",
+        "type": "nonnsfw"
+    },
+    "examplensfw": {
+        "description": "example nsfw command",
+        "mmresponses": [
+            "male <-> male response"
+        ],
+        "mfresponses": [
+            "male -> female response"
+        ],
+        "fmresponses": [
+            "female -> male response"
+        ],
+        "ffresponses": [
+            "female <-> female response"
+        ],
+        "yourself": "yourself response",
+        "type": "anynsfw"
     }
 }
