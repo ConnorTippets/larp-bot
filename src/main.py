@@ -2,7 +2,7 @@ import discord
 import json
 import random
 import inspect
-from discord.ext.commands import Bot, Context
+from discord.ext.commands import Bot, Context, is_owner
 from discord import ui
 import aiosqlite
 
@@ -60,6 +60,7 @@ class MyBot(Bot):
             command_prefix=";",
             intents=discord.Intents.default()
             | discord.Intents._from_value(discord.Intents.message_content.flag),
+            owner_ids=(376129806313455616,),
         )
         self.db = None
 
@@ -116,6 +117,7 @@ async def test(interaction: discord.Interaction):
 
 
 @bot.command(name="sync", description="Sync commands.")
+@is_owner()
 async def sync(interaction: Context):
     await bot.tree.sync(guild=interaction.guild)
     await bot.tree.sync()
