@@ -9,11 +9,12 @@ import aiosqlite
 
 async def check_dms(
     interaction: discord.Interaction, user: discord.User | discord.Member
-):
+) -> bool:
     if not bot.db:
-        return await interaction.response.send_message(
+        await interaction.response.send_message(
             "Database connection failed!", ephemeral=True
         )
+        return False
 
     cursor = await bot.db.execute(
         "SELECT nsfw_in_dms FROM consent WHERE user = ?", (interaction.user.id,)
@@ -21,16 +22,18 @@ async def check_dms(
     consent_author_row = await cursor.fetchone()
 
     if not consent_author_row:
-        return await interaction.response.send_message(
+        await interaction.response.send_message(
             "You have not consented to dms yet!", ephemeral=True
         )
+        return False
 
     consent_author: int = consent_author_row[0]
 
     if not consent_author:
-        return await interaction.response.send_message(
+        await interaction.response.send_message(
             "You do not consent to dms!", ephemeral=True
         )
+        return False
 
     cursor = await bot.db.execute(
         "SELECT nsfw_in_dms FROM consent WHERE user = ?", (user.id,)
@@ -38,16 +41,20 @@ async def check_dms(
     consent_receiver_row = await cursor.fetchone()
 
     if not consent_receiver_row:
-        return await interaction.response.send_message(
+        await interaction.response.send_message(
             f"`{user.name}` has not consented to dms yet!", ephemeral=True
         )
+        return False
 
     consent_receiver: int = consent_receiver_row[0]
 
     if not consent_receiver:
-        return await interaction.response.send_message(
+        await interaction.response.send_message(
             f"`{user.name}` does not consent to dms!", ephemeral=True
         )
+        return False
+
+    return True
 
 
 async def check_consent(
@@ -281,8 +288,8 @@ async def {name}"""
                 + r"""(
     interaction: discord.Interaction, user: discord.User | discord.Member
 ):
-    if not interaction.guild:
-        return await check_dms(interaction, user)
+    if not interaction.guild and not await check_dms(interaction, user):
+        return 
     
     if not await check_consent(interaction, user):
         return
