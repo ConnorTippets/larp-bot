@@ -16,7 +16,7 @@ async def check_dms(
         )
 
     cursor = await bot.db.execute(
-        "SELECT nsfw_in_dms FROM consent WHERE user = ?", (interaction.user.id)
+        "SELECT nsfw_in_dms FROM consent WHERE user = ?", (interaction.user.id,)
     )
     consent_author_row = await cursor.fetchone()
 
@@ -33,7 +33,7 @@ async def check_dms(
         )
 
     cursor = await bot.db.execute(
-        "SELECT nsfw_in_dms FROM consent WHERE user = ?", (user.id)
+        "SELECT nsfw_in_dms FROM consent WHERE user = ?", (user.id,)
     )
     consent_receiver_row = await cursor.fetchone()
 
@@ -61,7 +61,7 @@ async def check_consent(
 
     cursor = await bot.db.execute(
         "SELECT sex, consent_male, consent_female FROM consent WHERE user = ?",
-        (interaction.user.id),
+        (interaction.user.id,),
     )
     consent_author_row = await cursor.fetchone()
 
@@ -75,7 +75,7 @@ async def check_consent(
 
     cursor = await bot.db.execute(
         "SELECT sex, consent_male, consent_female FROM consent WHERE user = ?",
-        (user.id),
+        (user.id,),
     )
     consent_user_row = await cursor.fetchone()
 
