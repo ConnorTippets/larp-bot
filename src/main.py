@@ -115,6 +115,26 @@ async def check_consent(
     return True
 
 
+async def get_sex(user: discord.User | discord.Member) -> bool | None:
+    if not bot.db:
+        # if we're calling this function, the bot almost certainly has a database connection
+        return
+
+    cursor = await bot.db.execute(
+        "SELECT sex FROM consent WHERE user = ?",
+        (user.id,),
+    )
+    user_row = await cursor.fetchone()
+
+    if not user_row:
+        # both users should have a row by now
+        return
+
+    user_sex: int = user_row[0]
+
+    return bool(user_sex)
+
+
 class Consent(ui.Modal, title="Consent"):
     sex = ui.Label(
         text="Sex",
@@ -280,6 +300,21 @@ async def {name}"""
                 {**locals(), **globals()},
             )
         case "anynsfw":
+            mmresponses = action["mmresponses"]
+            if not isinstance(mmresponses, list):
+                raise KeyError("Fix ts23")
+
+            mfresponses = action["mfresponses"]
+            if not isinstance(mfresponses, list):
+                raise KeyError("Fix ts25")
+
+            fmresponses = action["fmresponses"]
+            if not isinstance(fmresponses, list):
+                raise KeyError("Fix ts22")
+
+            ffresponses = action["ffresponses"]
+            if not isinstance(ffresponses, list):
+                raise KeyError("Fix ts28")
             exec(
                 f"""@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name=name, description=description, nsfw=True)
@@ -301,6 +336,19 @@ async def {name}"""
         )
         return
         
+    author_sex = await get_sex(interaction.user)
+    user_sex = await get_sex(user)
+    
+    responses: list = []
+    if not (author_sex or user_sex):  # both are male
+        responses = mmresponses
+    elif not author_sex and user_sex:
+        responses = mfresponses
+    elif author_sex and not user_sex:  # symmetric but useful!
+        responses = fmresponses
+    else:  # only other possibility is both being female
+        responses = ffresponses
+    
     await interaction.response.send_message(
         random.choice(responses)
         .replace(r"${0}", interaction.user.mention)
