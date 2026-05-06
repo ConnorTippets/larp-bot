@@ -211,21 +211,21 @@ class MyBot(Bot):
 bot = MyBot()
 
 
-@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@bot.tree.command(name="smack", description="Smack someone across the face!")
-async def smack(interaction: discord.Interaction, user: discord.User | discord.Member):
-    if user.name == "kiiatto":
-        await interaction.response.send_message(
-            f"{interaction.user.mention} just smacked {user.mention} for overusing Goober Bot!"
-        )
-    elif user.name == interaction.user.name:
-        await interaction.response.send_message(
-            f"{interaction.user.mention} just smacked... themself?"
-        )
-    else:
-        await interaction.response.send_message(
-            f"{interaction.user.mention} just smacked {user.mention}!"
-        )
+# @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+# @bot.tree.command(name="smack", description="Smack someone across the face!")
+# async def smack(interaction: discord.Interaction, user: discord.User | discord.Member):
+#     if user.name == "kiiatto":
+#         await interaction.response.send_message(
+#             f"{interaction.user.mention} just smacked {user.mention} for overusing Goober Bot!"
+#         )
+#     elif user.name == interaction.user.name:
+#         await interaction.response.send_message(
+#             f"{interaction.user.mention} just smacked... themself?"
+#         )
+#     else:
+#         await interaction.response.send_message(
+#             f"{interaction.user.mention} just smacked {user.mention}!"
+#         )
 
 
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -280,7 +280,7 @@ for name, action in commands.items():
             exec(
                 f"""@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name=name, description=description)
-async def {name}"""
+async def _{name}"""
                 + r"""(
     interaction: discord.Interaction, user: discord.User | discord.Member
 ):
@@ -318,7 +318,7 @@ async def {name}"""
             exec(
                 f"""@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.tree.command(name=name, description=description, nsfw=True)
-async def {name}"""
+async def _{name}"""
                 + r"""(
     interaction: discord.Interaction, user: discord.User | discord.Member
 ):
