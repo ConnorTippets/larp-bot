@@ -39,15 +39,73 @@ async def check_dms(
 
     if not consent_receiver_row:
         return await interaction.response.send_message(
-            f"`{user.name} has not consented to dms yet!", ephemeral=True
+            f"`{user.name}` has not consented to dms yet!", ephemeral=True
         )
 
     consent_receiver: int = consent_receiver_row[0]
 
     if not consent_receiver:
         return await interaction.response.send_message(
-            f"`{user.name} does not consent to dms!", ephemeral=True
+            f"`{user.name}` does not consent to dms!", ephemeral=True
         )
+
+
+async def check_consent(
+    interaction: discord.Interaction, user: discord.User | discord.Member
+) -> bool:
+    if not bot.db:
+        await interaction.response.send_message(
+            "Database connection failed!", ephemeral=True
+        )
+        return False
+
+    cursor = await bot.db.execute(
+        "SELECT sex, consent_male, consent_female FROM consent WHERE user = ?",
+        (interaction.user.id),
+    )
+    consent_author_row = await cursor.fetchone()
+
+    if not consent_author_row:
+        await interaction.response.send_message(
+            "You have not configured consent!", ephemeral=True
+        )
+        return False
+
+    author_sex, author_allow_male, author_allow_female = consent_author_row
+
+    cursor = await bot.db.execute(
+        "SELECT sex, consent_male, consent_female FROM consent WHERE user = ?",
+        (user.id),
+    )
+    consent_user_row = await cursor.fetchone()
+
+    if not consent_user_row:
+        await interaction.response.send_message(
+            f"`{user.name}` has not configured consent!", ephemeral=True
+        )
+        return False
+
+    user_sex, user_allow_male, user_allow_female = consent_user_row
+
+    if (not user_sex and not author_allow_male) or (
+        user_sex and not author_allow_female
+    ):
+        await interaction.response.send_message(
+            f"You do not consent to {"females" if user_sex else "males"}!",
+            ephemeral=True,
+        )
+        return False
+
+    if (not author_sex and not user_allow_male) or (
+        author_sex and not user_allow_female
+    ):
+        await interaction.response.send_message(
+            f"`{user.name}` does not consent to {"females" if author_sex else "males"}!",
+            ephemeral=True,
+        )
+        return False
+
+    return True
 
 
 class Consent(ui.Modal, title="Consent"):
@@ -206,6 +264,8 @@ async def {name}"""
                 r"${0}", interaction.user.mention
             )
         )
+        return
+        
     await interaction.response.send_message(
         random.choice(responses)
         .replace(r"${0}", interaction.user.mention)
@@ -216,13 +276,16 @@ async def {name}"""
         case "anynsfw":
             exec(
                 f"""@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@bot.tree.command(name=name, description=description)
+@bot.tree.command(name=name, description=description, nsfw=True)
 async def {name}"""
                 + r"""(
     interaction: discord.Interaction, user: discord.User | discord.Member
 ):
     if not interaction.guild:
         return await check_dms(interaction, user)
+    
+    if not await check_consent(interaction, user):
+        return
 
     if interaction.user.id == user.id:
         await interaction.response.send_message(
@@ -230,6 +293,8 @@ async def {name}"""
                 r"${0}", interaction.user.mention
             )
         )
+        return
+        
     await interaction.response.send_message(
         random.choice(responses)
         .replace(r"${0}", interaction.user.mention)
