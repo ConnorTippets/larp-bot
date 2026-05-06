@@ -170,7 +170,6 @@ class MyBot(Bot):
             command_prefix=";",
             intents=discord.Intents.default()
             | discord.Intents._from_value(discord.Intents.message_content.flag),
-            owner_ids=(376129806313455616,),
         )
         self.db = None
 
@@ -227,7 +226,7 @@ async def test(interaction: discord.Interaction):
     await interaction.response.send_message(await cursor.fetchall())
 
 
-@bot.command(name="sync", description="Sync commands.")
+@bot.command(description="Sync commands.")
 @is_owner()
 async def sync(interaction: Context):
     await bot.tree.sync(guild=interaction.guild)
